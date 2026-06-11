@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hello-world-html
+  namespace: default
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Hello World</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          text-align: center;
+          margin-top: 100px;
+          background-color: #f4f4f4;
+        }
+        .container {
+          background: white;
+          padding: 30px;
+          border-radius: 10px;
+          display: inline-block;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+          color: #0078d4;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>Hello World!</h1>
+        <p>Welcome to k3s + NGINX Gateway Fabric</p>
+        <p>Domain: hello.hashil.online</p>
+      </div>
+    </body>
+    </html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-world
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-world
+  template:
+    metadata:
+      labels:
+        app: hello-world
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+      volumes:
+      - name: html
+        configMap:
+          name: hello-world-html
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world
+  namespace: default
+spec:
+  selector:
+    app: hello-world
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: hello-world-route
+  namespace: default
+spec:
+  hostnames:
+  - hello.hashil.online
+
+  parentRefs:
+  - name: cluster-gateway
+    namespace: nginx-gateway
+    sectionName: https
+
+  rules:
+  - backendRefs:
+    - name: hello-world
+      port: 80
+

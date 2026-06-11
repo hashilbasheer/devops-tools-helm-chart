@@ -1,0 +1,23 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: cluster-gateway
+  namespace: nginx-gateway
+spec:
+  gatewayClassName: nginx
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+  - name: https
+    port: 443
+    protocol: HTTPS
+    hostname: "*.hashil.online"
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - kind: Secret
+          name: ssl-tls-secret
+    allowedRoutes:
+      namespaces:
+        from: All
